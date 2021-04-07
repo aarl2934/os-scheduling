@@ -50,6 +50,9 @@ public:
 
     void updateProcess(uint64_t current_time);
     void updateBurstTime(int burst_idx, uint32_t new_time);
+
+    uint64_t getBurstTime(int burst) const; 
+    uint16_t getNumBursts() const;
 };
 
 // Comparators: used in std::list sort() method

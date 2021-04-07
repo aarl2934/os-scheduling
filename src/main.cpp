@@ -188,9 +188,28 @@ void coreRunProcesses(uint8_t core_id, SchedulerData *shared_data)// Work to be 
         }
         proc->setState(Process::State::Running, time);
         proc->setBurstStartTime(time);
+        proc->updateProcess(currentTime());
         while(proc->getState() == Process::State::Running){
-            if(currentTime() - proc->getBurstStartTime() > shared_data->time_slice){
-                
+            for(int i = 0; i < proc->getNumBursts(); i+=2){
+                if(proc->getBurstTime(i) > 0){
+                    int tempTime = proc->getBurstTime(i) - (currentTime() - time);
+                    if(tempTime < 0){
+                        tempTime = 0;
+                    }
+                    proc->updateBurstTime(i, tempTime);
+                    if(proc->getBurstTime(i) <= 0 && i == proc->getNumBursts() - 1){
+                        proc->setState(Process::State::Terminated, currentTime());
+                    }
+                    else if(proc->getBurstTime(i) <= 0){
+                        proc->setState(Process::State::IO, currentTime());
+                    }
+                    break;
+                }
+            }
+            if(proc->isInterrupted()){
+                std::lock_guard<std::mutex> lock(shared_data->mutex);
+                proc->setState(Process::State::Ready, currentTime());
+                shared_data->ready_queue.push_back(proc);
             }
         }
     }
