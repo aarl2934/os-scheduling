@@ -158,7 +158,7 @@ void Process::incBurst(){
 }
 
 bool Process::isTerm(){
-    if(current_burst == num_bursts - 1){
+    if(current_burst >= num_bursts - 1){
         return burst_times[current_burst] == 0;
     }
     return false;
