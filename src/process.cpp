@@ -124,12 +124,20 @@ void Process::updateProcess(uint64_t current_time)
 {
     // use `current_time` to update turnaround time, wait time, burst times, 
     // cpu time, and remaining time
+    uint64_t temp = current_time - burst_start_time;
+    if(temp > burst_times[current_burst]){
+        burst_times[current_burst] = 0;
+    }
     turn_time = current_time - launch_time;
     remain_time = remain_time - turn_time;
     //if(state == Ready){
-       // wait_time = wait_time + 
-    //}
+       // wait_time = wait_time + amt of time waiting in ready q
+    //} how long has passed since it was added to q
     
+}
+
+uint64_t Process::startWaitingTime(uint64_t current_time){
+
 }
 
 void Process::updateBurstTime(int burst_idx, uint32_t new_time)
@@ -137,12 +145,23 @@ void Process::updateBurstTime(int burst_idx, uint32_t new_time)
     burst_times[burst_idx] = new_time;
 }
 
-uint64_t Process::getBurstTime(int burst) const{
-    return burst_times[burst];
+uint64_t Process::getBurstTime() const{
+    return burst_times[current_burst];
 }
 
 uint16_t Process::getNumBursts() const{
     return num_bursts;
+}
+
+void Process::incBurst(){
+    current_burst++;
+}
+
+bool Process::isTerm(){
+    if(current_burst == num_bursts - 1){
+        return burst_times[current_burst] == 0;
+    }
+    return false;
 }
 
 

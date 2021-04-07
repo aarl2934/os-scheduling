@@ -51,8 +51,11 @@ public:
     void updateProcess(uint64_t current_time);
     void updateBurstTime(int burst_idx, uint32_t new_time);
 
-    uint64_t getBurstTime(int burst) const; 
+    uint64_t getBurstTime() const; 
     uint16_t getNumBursts() const;
+    uint64_t startWaitingTime(uint64_t current_time);
+    void incBurst();
+    bool isTerm();
 };
 
 // Comparators: used in std::list sort() method
