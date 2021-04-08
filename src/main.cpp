@@ -95,21 +95,23 @@ int main(int argc, char **argv)
             if(time - start >= processes[i]->getStartTime() && processes[i]->getState() == Process::State::NotStarted){
                 std::lock_guard<std::mutex> lock(shared_data->mutex);
                 processes[i]->setState(Process::State::Ready, time);
+                processes[i]->setCpuCore(-1);
                 shared_data->ready_queue.push_back(processes[i]); //access shared data, critical point
             }
             //   - *Check if any processes have finished their I/O burst, and if so put that process back in the ready queue
             {
                 std::lock_guard<std::mutex> lock(shared_data->mutex);
-                while(processes[i]->getState() != Process::State::NotStarted && processes[i]->getBurstTime() > 0){
+                //while(processes[i]->getState() != Process::State::NotStarted && processes[i]->getBurstTime() > 0){
+                if(processes[i]->getCurrBurst()%2 == 1){
                     processes[i]->updateProcess(currentTime());
                     if(processes[i]->getBurstTime() == 0){
                         processes[i]->setState(Process::State::Ready, time);
+                        processes[i]->setCpuCore(-1);
                         shared_data->ready_queue.push_back(processes[i]);
+                        processes[i]->incBurst();
                     }
                 }
             }
-            {std::lock_guard<std::mutex> lock(shared_data->mutex);
-            processes[i]->incBurst();}
             //   - *Check if any running process need to be interrupted (RR time slice expires or newly ready process has higher priority)
             {
                 std::lock_guard<std::mutex> lock(shared_data->mutex);
@@ -187,47 +189,61 @@ int main(int argc, char **argv)
 
 void coreRunProcesses(uint8_t core_id, SchedulerData *shared_data)// Work to be done by each core idependent of the other cores
 {
+    int rqsize;
     while (!(shared_data->all_terminated)){// Repeat until all processes in terminated state:
-        if(shared_data->ready_queue.size() > 0){//check if ready q is not empty
+        {
+            std::lock_guard<std::mutex> lock(shared_data->mutex);
+            rqsize = shared_data->ready_queue.size();
+        }
+        if(rqsize > 0){//check if ready q is not empty
             Process* proc;
             uint64_t time = currentTime();
             {//   - *Get process at front of ready queue
-                std::lock_guard<std::mutex> lock(shared_data->mutex);
+                
                 proc = shared_data->ready_queue.front();
                 shared_data->ready_queue.pop_front();
             }
             proc->setState(Process::State::Running, time);
+            proc->setCpuCore(core_id);
             proc->setBurstStartTime(time);
             {
                 std::lock_guard<std::mutex> lock(shared_data->mutex);
                 proc->updateProcess(time);
             }
             while(proc->getState() == Process::State::Running){
+                uint64_t runningTime = currentTime();
                 if(proc->isInterrupted()){
                     std::lock_guard<std::mutex> lock(shared_data->mutex);
-                    proc->setState(Process::State::Ready, currentTime());
-                    proc->updateProcess(currentTime());
+                    proc->setState(Process::State::Ready, runningTime);
+                    proc->setCpuCore(-1);
+                    proc->updateProcess(runningTime);
                     shared_data->ready_queue.push_back(proc);
                     //set waiting time start
                 }
-                while(proc->getBurstTime() > 0){
-                //for(int i = 0; i < proc->getNumBursts(); i+=2){
+                if(proc->getCurrBurst()%2 == 0){
                     {
                         std::lock_guard<std::mutex> lock(shared_data->mutex); 
-                        proc->updateProcess(currentTime());
+                        proc->updateProcess(runningTime);
                     }
                    
                     if(proc->isTerm()){
-                        proc->setState(Process::State::Terminated, currentTime());
+                        proc->setState(Process::State::Terminated, runningTime);
+                        proc->setCpuCore(-1);
                     }
                     else if(proc->getBurstTime() <= 0){
-                        proc->setState(Process::State::IO, currentTime());
+                        proc->setState(Process::State::IO, runningTime);
+                        proc->setCpuCore(-1);
+                        std::lock_guard<std::mutex> lock(shared_data->mutex);
+                        proc->setBurstStartTime(runningTime);
+                        proc->incBurst();
                     }
                 }
-                {std::lock_guard<std::mutex> lock(shared_data->mutex);
-                proc->incBurst();}
             }
         }
+        else{
+            usleep(50000);
+        }
+        usleep(shared_data->context_switch);
     }
     //   - Simulate the processes running until one of the following:
     //     - CPU burst time has elapsed
