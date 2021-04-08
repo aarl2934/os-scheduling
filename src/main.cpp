@@ -27,6 +27,7 @@ int printProcessOutput(std::vector<Process*>& processes, std::mutex& mutex);
 void clearOutput(int num_lines);
 uint64_t currentTime();
 std::string processStateToString(Process::State state);
+void printStatistics(std::vector<Process*> processes);
 
 int main(int argc, char **argv)
 {
@@ -173,6 +174,8 @@ int main(int argc, char **argv)
     {
         schedule_threads[i].join();
     }
+
+    printStatistics(processes);
 
     // print final statistics
     //  - CPU utilization
@@ -341,4 +344,35 @@ std::string processStateToString(Process::State state)
             break;
     }
     return str;
+}
+
+void printStatistics(std::vector<Process*> processes){
+    int totalCPU = 0;
+    int firstHalf = 0;
+    int secondHalf = 0;
+
+    int cpuUtil = 0;
+    int totalTurn = 0;
+    int totalWait = 0;
+
+    for(int i = 0; i < processes.size(); i++){
+        totalCPU += processes[i]->getCpuTime();
+        totalWait += processes[i]->getWaitTime();
+        if(i < processes.size()/2){
+            firstHalf += processes[i]->getTurnaroundTime();
+        }else{
+            secondHalf += processes[i]->getTurnaroundTime();
+        }
+    }
+
+    totalTurn = firstHalf + secondHalf;
+    cpuUtil = totalCPU/totalTurn;
+
+    printf("CPU UTIL: %d\n", cpuUtil*100);
+    printf("THROUGHPUT: \n");
+    printf("\tFirstHalf: %ld\n", (processes.size()/2)/firstHalf);
+    printf("\tSecondHalf: %ld\n", (processes.size()/2)/secondHalf);
+    printf("\tTotal: %ld\n", processes.size()/totalTurn);
+    printf("Avg TURNAROUND: %ld\n", totalTurn/processes.size());
+    printf("Avg WAIT: %ld", totalWait/processes.size());
 }
