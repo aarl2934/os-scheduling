@@ -347,13 +347,13 @@ std::string processStateToString(Process::State state)
 }
 
 void printStatistics(std::vector<Process*> processes){
-    int totalCPU = 0;
-    int firstHalf = 0;
-    int secondHalf = 0;
+    double totalCPU = 0;
+    double firstHalf = 0;
+    double secondHalf = 0;
 
-    int cpuUtil = 0;
-    int totalTurn = 0;
-    int totalWait = 0;
+    double cpuUtil = 0;
+    double totalTurn = 0;
+    double totalWait = 0;
 
     for(int i = 0; i < processes.size(); i++){
         totalCPU += processes[i]->getCpuTime();
@@ -368,11 +368,11 @@ void printStatistics(std::vector<Process*> processes){
     totalTurn = firstHalf + secondHalf;
     cpuUtil = totalCPU/totalTurn;
 
-    printf("CPU UTIL: %d\n", cpuUtil*100);
+    printf("CPU UTIL: %f\n", cpuUtil*100);
     printf("THROUGHPUT: \n");
-    printf("\tFirstHalf: %ld\n", (processes.size()/2)/firstHalf);
-    printf("\tSecondHalf: %ld\n", (processes.size()/2)/secondHalf);
-    printf("\tTotal: %ld\n", processes.size()/totalTurn);
-    printf("Avg TURNAROUND: %ld\n", totalTurn/processes.size());
-    printf("Avg WAIT: %ld", totalWait/processes.size());
+    printf("\tFirstHalf: %f\n", (processes.size()/2)/firstHalf);
+    printf("\tSecondHalf: %f\n", (processes.size()/2)/secondHalf);
+    printf("\tTotal: %f\n", processes.size()/totalTurn);
+    printf("Avg TURNAROUND: %f\n", totalTurn/processes.size());
+    printf("Avg WAIT: %f", totalWait/processes.size());
 }
