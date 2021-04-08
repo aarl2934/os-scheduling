@@ -126,29 +126,46 @@ void Process::updateProcess(uint64_t current_time)
     // cpu time, and remaining time
     
     if(state != NotStarted){
+        uint64_t waitTime = startWaitingTime(current_time);
         uint64_t temp = current_time - burst_start_time;
         uint32_t oldBurst = 0;
         if(temp > burst_times[current_burst]){
             oldBurst = burst_times[current_burst];
             burst_times[current_burst] = 0;
             turn_time += oldBurst;
-            remain_time = remain_time - 5;
+            if(state != IO){
+                remain_time = remain_time - oldBurst; 
+            }
+            //wait_time = wait_time + waitingTime;
+            cpu_time = cpu_time + (endingTime - startTime);
+            if(state != Running){
+                wait_time = wait_time + (waitingTime - endWait);
+            }
+            
         }
-        
     }
     
     //if(state == Ready){
        // wait_time = wait_time + amt of time waiting in ready q
     //} how long has passed since it was added to q
+    //wait is only while ready, start counting when set to ready, anything else is stop
     
+}
+
+uint64_t Process::cpuStartTime(uint64_t sTime){
+    startTime = sTime;
+}
+
+uint64_t Process::endTime(uint64_t endTime){
+    endingTime = endTime;
 }
 
 uint64_t Process::startWaitingTime(uint64_t current_time){
     waitingTime = current_time;
 }
 
-uint64_t Process::startCPUTime(uint64_t current_time){
-    cpuTime = current_time;
+uint64_t Process::endWaitingTime(uint64_t current_time){
+    endWait = current_time;
 }
 
 void Process::updateBurstTime(int burst_idx, uint32_t new_time)

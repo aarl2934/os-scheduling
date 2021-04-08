@@ -25,7 +25,9 @@ private:
     int32_t remain_time;        // CPU time remaining until terminated
     uint64_t launch_time;       // actual time in ms (since epoch) that process was 'launched'
     uint64_t waitingTime;
-    uint64_t cpuTime;
+    uint64_t endWait;
+    uint64_t startTime;
+    uint64_t endingTime;
     // you are welcome to add other private data fields here if you so choose
 
 public:
@@ -56,10 +58,12 @@ public:
     uint64_t getBurstTime() const; 
     uint16_t getNumBursts() const;
     uint64_t startWaitingTime(uint64_t current_time);
-    uint64_t startCPUTime(uint64_t current_time);
+    uint64_t endWaitingTime(uint64_t current_time);
     void incBurst();
     bool isTerm();
     uint16_t getCurrBurst();
+    uint64_t cpuStartTime(uint64_t sTime);
+    uint64_t endTime(uint64_t endingTime);
 };
 
 // Comparators: used in std::list sort() method
